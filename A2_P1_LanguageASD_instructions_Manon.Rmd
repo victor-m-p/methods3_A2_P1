@@ -23,8 +23,10 @@ Part 1 - Basic description of language development
 ```{r}
 # Importing data from portfolio 1
 df <- read_csv("merged_df_assignment1.csv")
+df$X1 <- NULL
 
 # 1.1
+# the number, age, gender, clinical and cognitive features of children in the groups ASD and TD.
 
 
 
