@@ -8,6 +8,8 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(include = FALSE)
+
+library(tidyverse)
 ```
 
 # Assignment 2
@@ -18,14 +20,22 @@ In this assignment you will have to discuss a few important questions (given the
 
 Part 1 - Basic description of language development
 - Describe your sample (n, age, gender, clinical and cognitive features of the two groups) and critically assess whether the groups (ASD and TD) are balanced
+```{r}
+# Importing data from portfolio 1
+df <- read_csv("merged_df_assignment1.csv")
+
+# 1.1
+
+
+
+```
+
+
 - Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group). 
 - Describe how parental use of language (in terms of MLU) changes over time. What do you think is going on?
 - Include individual differences in your model of language development (in children). Identify the best model.
 
-```{r}
-# comment :-)
 
-```
 
 
 Part 2 - Model comparison
