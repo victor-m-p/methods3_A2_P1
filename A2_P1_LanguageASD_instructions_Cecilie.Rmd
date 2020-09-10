@@ -1,7 +1,7 @@
 ---
 title: "Assignment 2 - Language Development in ASD - Part 1 - Explaining development"
-author: "[YOUR NAME]"
-date: "[DATE]"
+author: "[Cecilie]"
+date: "[10/09/2020]"
 output: html_document
 ---
     
