@@ -35,6 +35,10 @@ summarize(df, Gender == "M", Gender == "F")
 
 
 
+
+
+
+
 ```
 
 
