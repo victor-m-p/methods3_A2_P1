@@ -1,7 +1,7 @@
 ---
 title: "Assignment 2 - Language Development in ASD - Part 1 - Explaining development"
-author: "Group 10"
-date: "10/09/20"
+author: "[YOUR NAME]"
+date: "[DATE]"
 output: html_document
 ---
     
@@ -21,11 +21,6 @@ Part 1 - Basic description of language development
 - Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group). 
 - Describe how parental use of language (in terms of MLU) changes over time. What do you think is going on?
 - Include individual differences in your model of language development (in children). Identify the best model.
-
-```{r}
-# comment :-)
-```
-
 
 Part 2 - Model comparison
 - Discuss the differences in performance of your model in training and testing data
