@@ -75,7 +75,7 @@ Load necessary libraries : what will you need?
 - e.g. something to plot with
 
 ```{r Load Libraries, include = FALSE}
-library(tidyverse)
+library(tidyverse, lmer4)
 ```
 
 ### Define your working directory and load the data
@@ -88,7 +88,9 @@ If you opened this Rmd file outside of a project, you will need some code to fin
 - Load the data you saved last time (use read_csv(fileName))
 
 ```{r Load Data, include = FALSE}
-
+df <- read_csv("merged_df_assignment1.csv")
+# remove a coloum
+df$X1 = NULL
 ```
 
 ### Characterize the participants (Exercise 1)
@@ -118,6 +120,7 @@ Remember to plot the data first and then to run a statistical test.
 - Which variable(s) should be included as random factors?
 
 ```{r ex2, include = FALSE}
+
 
 ```
 
