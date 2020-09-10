@@ -26,25 +26,45 @@ df <- read_csv("merged_df_assignment1.csv")
 df$X1 <- NULL
 df$Diagnosis <- as.factor(df$Diagnosis)
 
-
 # 1.1
 # the number, age, gender, clinical and cognitive features of children in the groups ASD and TD.
 df <- group_by(df, Diagnosis)
-summarize(df, Gender == "M", Gender == "F")
 
+df %>% count(mean(Age), sort = TRUE)
+df %>% count(Gender, sort = TRUE)
+df %>% count(Ethnicity, sort = TRUE)
 
-
-
-
-
-
+mean(df$Socialization, na.rm = T)
+plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(Socialization, na.rm = TRUE))
+# https://stackoverflow.com/questions/23553407/calculating-mean-values-based-on-two-different-groupings-in-a-data-frame
 
 ```
 
 
 - Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group). 
+```{r}
+m1 <- lm(CHI_MLU ~ Diagnosis*VISIT, df)
+summary(m1)
+
+ggplot(df, aes(x = VISIT, y = CHI_MLU, color = Diagnosis)) +
+  geom_point() + 
+  geom_smooth(method = lm)
+```
+
+
 - Describe how parental use of language (in terms of MLU) changes over time. What do you think is going on?
+```{r}
+
+
+# Could be the scaffolding changing due to the child's linguistic progression
+```
+
+
 - Include individual differences in your model of language development (in children). Identify the best model.
+```{r}
+
+```
+
 
 
 
