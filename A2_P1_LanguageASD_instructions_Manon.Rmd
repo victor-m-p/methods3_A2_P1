@@ -34,10 +34,23 @@ df %>% count(mean(Age), sort = TRUE)
 df %>% count(Gender, sort = TRUE)
 df %>% count(Ethnicity, sort = TRUE)
 
+
 mean(df$Socialization, na.rm = T)
 plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(Socialization, na.rm = TRUE))
 # https://stackoverflow.com/questions/23553407/calculating-mean-values-based-on-two-different-groupings-in-a-data-frame
 
+
+```
+
+- Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group). 
+```{r}
+m1 <- lm(CHI_MLU ~ Diagnosis*VISIT, df)
+summary(m1)
+
+
+ggplot(df, aes(x = VISIT, y = CHI_MLU, color = Diagnosis)) +
+  geom_point() + 
+  geom_smooth(method = lm)
 ```
 
 
@@ -45,6 +58,7 @@ plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(Socialization, na.rm = TRUE
 ```{r}
 m1 <- lm(CHI_MLU ~ Diagnosis*VISIT, df)
 summary(m1)
+
 
 ggplot(df, aes(x = VISIT, y = CHI_MLU, color = Diagnosis)) +
   geom_point() + 
