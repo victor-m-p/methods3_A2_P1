@@ -75,6 +75,7 @@ Load necessary libraries : what will you need?
 - e.g. something to plot with
 
 ```{r Load Libraries, include = FALSE}
+pacman::p_load(tidyverse,janitor, lme4, ggplot2)
 
 ```
 
@@ -88,6 +89,8 @@ If you opened this Rmd file outside of a project, you will need some code to fin
 - Load the data you saved last time (use read_csv(fileName))
 
 ```{r Load Data, include = FALSE}
+df <- read_csv("merged_df_assignment1.csv")
+df$X1 <- NULL
 
 ```
 
@@ -100,6 +103,20 @@ Make sure the variables are in the right format.
 Describe the characteristics of the two groups of participants and whether the two groups are well matched.
 
 ```{r descriptive stats, include = FALSE}
+# the number, age, gender, clinical and cognitive features of children in the groups ASD and TD.
+df <- group_by(df, Diagnosis)
+
+df %>% count(mean(Age, na.rm = TRUE), sort = TRUE)
+
+df %>% count(Gender, sort = TRUE)
+
+df %>% count(Ethnicity, sort = TRUE)
+ggplot(df, aes(fill = Diagnosis, x = Ethnicity)) + 
+  geom_bar(position = "dodge")
+
+
+mean(df$Socialization, na.rm = T)
+plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(Socialization, na.rm = TRUE))
 
 ```
 
@@ -118,13 +135,28 @@ Remember to plot the data first and then to run a statistical test.
 - Which variable(s) should be included as random factors?
 
 ```{r ex2, include = FALSE}
+# Creating the model
+linear_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis, df)
+linear_m2 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT*Diagnosis, df)
 
+# Plotting
+ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(method = lm) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+# Model summary
+summary(linear_m1)
+summary(linear_m2)
+
+plot(linear_m2)
+# !!! NB !!!: "if you’re seeing stripes in your residual plot, then you’re most likely dealing with some kind of categorical data – and you would need to turn to a somewhat different class of models, such as logistic models"  ... Should we use logistic regression? We are seeing stripes, but on the other hand, the dependent variable (MLU) is not categorical..?
 ```
 
 How would you evaluate whether the model is a good model?
 
 ```{r ex2 evaluate, include = FALSE}
-
+# Looking at the r-squared?
 ```
 
 Not too good, right? Let's check whether a growth curve model is better.
@@ -132,12 +164,43 @@ Remember: a growth curve model assesses whether changes in time can be described
 First build the different models, then compare them to see which one is better.
 
 ```{r ex2 growth curve, include = FALSE}
+df$VISIT2 <- (df$VISIT)^2
+df$VISIT3 <- (df$VISIT)^3
 
+quadratic_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis*VISIT2, df)
+quadratic_m2 <- lm(CHI_MLU ~ VISIT*Diagnosis + VISIT2, df)
+quadratic_m3 <- lm(CHI_MLU ~ VISIT + Diagnosis*VISIT2, df)
+quadratic_m4 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT2, df)
+quadratic_m5 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
+
+summary(quadratic_m1)
+summary(quadratic_m2)
+summary(quadratic_m3)
+summary(quadratic_m4)
+summary(quadratic_m5)
+
+cubic_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis*VISIT3, df)
+cubic_m2 <- lm(CHI_MLU ~ VISIT*Diagnosis + VISIT3, df)
+cubic_m3 <- lm(CHI_MLU ~ VISIT + Diagnosis * VISIT3, df)
+cubic_m4 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT3, df)
+cubic_m5 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis, df)
+
+summary(cubic_m1)
+summary(cubic_m2)
+summary(cubic_m3)
+summary(cubic_m4)
+summary(cubic_m5)
 ```
 
 Exciting right? Let's check whether the model is doing an alright job at fitting the data. Plot the actual CHI_MLU data against the predictions of the model fitted(model). 
 
 ```{r}
+install.packages("ggplot2")
+library(ggplot2)
+ggplot2::effect_plot(quadratic_m5, pred = CHI_MLU, interval = TRUE, plot.points = TRUE)
+
+
+plot(quadratic_m5)
 
 ```
 
