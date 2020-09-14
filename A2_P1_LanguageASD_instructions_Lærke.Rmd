@@ -137,7 +137,7 @@ Remember to plot the data first and then to run a statistical test.
 ```{r ex2, include = FALSE}
 # Creating the model
 linear_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis, df)
-linear_m2 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT:Diagnosis, df)
+#linear_m2 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT:Diagnosis, df)
 linear_m3 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 | SUBJ), df)
 
 # Plotting
@@ -149,7 +149,7 @@ ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) +
 # Model summary
 summary(linear_m1)
 summary(linear_m3)
-summary(linear_m1)$adj.r.squared
+summary(linear_m1)$r.squared
 r.squaredGLMM(linear_m3)
 
 
@@ -172,43 +172,31 @@ df$VISIT2 <- (df$VISIT)^2
 df$VISIT3 <- (df$VISIT)^3
 
 quadratic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
-quadratic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis, df)
+#quadratic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis, df)
 quadratic_m2.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
-quadratic_m2.2 <- lmer(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis + (1 | SUBJ), df)
+#quadratic_m2.2 <- lmer(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis + (1 | SUBJ), df)
 
 summary(quadratic_m1.1)
-summary(quadratic_m2.2)
+#summary(quadratic_m2.2)
 summary(quadratic_m1.1)
-summary(quadratic_m2.2)
+#summary(quadratic_m2.2)
 
-summary(quadratic_m1.1)$adj.r.squared
-summary(quadratic_m1.2)$adj.r.squared
+summary(quadratic_m1.1)$r.squared
+#summary(quadratic_m1.2)$adj.r.squared
 r.squaredGLMM(quadratic_m2.1)
-r.squaredGLMM(quadratic_m2.2)
+#r.squaredGLMM(quadratic_m2.2)
 
 
 cubic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis, df)
-cubic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,3, raw = T):Diagnosis, df)
+#cubic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,3, raw = T):Diagnosis, df)
 cubic_m2.1 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
-cubic_m2.2 <- lm(CHI_MLU ~ poly(VISIT,3, raw = T):Diagnosis + (1 | SUBJ), df)
+#cubic_m2.2 <- lm(CHI_MLU ~ poly(VISIT,3, raw = T):Diagnosis + (1 | SUBJ), df)
 
-summary(cubic_m1)$adj.r.squared
-summary(cubic_m2)$adj.r.squared
+summary(cubic_m1)$r.squared
+#summary(cubic_m2)$adj.r.squared
 r.squaredGLMM(cubic_m2.1)
-r.squaredGLMM(cubic_m2.2)
+#r.squaredGLMM(cubic_m2.2)
 
-
-
-# I wanted to plot the different lines, but I don't know how.
-
-plot(df$VISIT, df$CHI_MLU, main = "curve comparison",  las = 1)
-abline(linear_m1, lwd = 3, colour = "red")
-
-# stat_smooth does not allow multiple regression.. what to do...? Is it because it isn't 2d anymore? But it is. idk
-ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
-  geom_point() + 
-  geom_smooth(se = FALSE, method = "lm", formula = y ~ poly(x, 2) : z) +
-  ggtitle('Development of MLU for children with ASD and TD over time')
 
 
 
@@ -282,6 +270,24 @@ with(df, plot(VISIT, CHI_MLU)) +
 
 
 plot(quadratic_m5)
+
+
+# I wanted to plot the different lines, but I don't know how.
+
+plot(df$VISIT, df$CHI_MLU, main = "curve comparison",  las = 1)
+abline(linear_m1, lwd = 3, colour = "red")
+
+# stat_smooth does not allow multiple regression.. what to do...? Is it because it isn't 2d anymore? But it is. idk
+ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm", formula = y ~ poly(x, 2) : z) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+
+
+
+plot(q,noisy.y,col='deepskyblue4',xlab='q',main='Observed data')
+lines(q,y,col='firebrick1',lwd=3)
 
 ```
 
