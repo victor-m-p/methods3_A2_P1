@@ -137,7 +137,7 @@ Remember to plot the data first and then to run a statistical test.
 ```{r ex2, include = FALSE}
 # Creating the model
 linear_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis, df)
-linear_m2 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT*Diagnosis, df)
+linear_m2 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT:Diagnosis, df)
 
 # Plotting
 ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
@@ -168,16 +168,21 @@ df$VISIT2 <- (df$VISIT)^2
 df$VISIT3 <- (df$VISIT)^3
 
 quadratic_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis*VISIT2, df)
-quadratic_m2 <- lm(CHI_MLU ~ VISIT*Diagnosis + VISIT2, df)
+quadratic_m21 <- lm(CHI_MLU ~ VISIT*Diagnosis + VISIT2, df)
+quadratic_m22 <- lm(CHI_MLU ~ VISIT*Diagnosis + I(VISIT^2), df)
 quadratic_m3 <- lm(CHI_MLU ~ VISIT + Diagnosis*VISIT2, df)
 quadratic_m4 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT2, df)
-quadratic_m5 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
+quadratic_m52 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT:Diagnosis, df)
+quadratic_m51 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
+quadratic_m6 <- lm(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis, df)
 
-summary(quadratic_m1)
-summary(quadratic_m2)
+summary(quadratic_m21)
+summary(quadratic_m22)
 summary(quadratic_m3)
 summary(quadratic_m4)
-summary(quadratic_m5)
+summary(quadratic_m51)
+summary(quadratic_m52)
+summary(quadratic_m6)
 
 cubic_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis*VISIT3, df)
 cubic_m2 <- lm(CHI_MLU ~ VISIT*Diagnosis + VISIT3, df)
@@ -190,7 +195,78 @@ summary(cubic_m2)
 summary(cubic_m3)
 summary(cubic_m4)
 summary(cubic_m5)
+
+
+
+# I wanted to plot the different lines, but I don't know how.
+
+plot(df$VISIT, df$CHI_MLU, main = "curve comparison",  las = 1)
+abline(linear_m1, lwd = 3, colour = "red")
+
+# stat_smooth does not allow multiple regression.. what to do...? Is it because it isn't 2d anymore? But it is. idk
+ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm", formula = y ~ poly(x, 2) : z) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+
+
+
+
+
+anova(linear_m2, quadratic_m6, cubic_m5)
+
+pacman::p_load(MuMIn, tidyverse)
+
+#writing AIC values down
+m_aic <- AIC(linear_m2, quadratic_m6, cubic_m5)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_aic)
+
+
+
+#writing down BIC values
+m_bic <- BIC(linear_m2, quadratic_m6, cubic_m5)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_bic)
+
+#putting results into one dataframe:
+mdl_com_df <- tibble( Model = c("linear", "quadratic", "cubic"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+
+mdl_com_df #Best model: Lowest AIC/BIC or largest AIC_Weight/BIC_Wegiht (choose what metric you like more, they function absolutely the same way)
+``` 
 ```
+
+```{r}
+#fit first degree polynomial equation:
+fit  <- lm(df$CHI_MLU ~ df$VISIT*df$Diagnosis)
+
+#second degree
+fit2 <- lm(CHI_MLU ~ poly(VISIT,2,raw=TRUE)*Diagnosis, df)
+
+#third degree
+fit3 <- lm(CHI_MLU ~ poly(VISIT,3,raw=TRUE)*Diagnosis, df)
+
+#fourth degree
+fit4 <- lm(CHI_MLU ~ poly(VISIT,4,raw=TRUE)*Diagnosis, df)
+
+#generate range of 50 numbers starting from 30 and ending at 160
+xx <- seq(1,6, length=6)
+plot(df$VISIT, df$CHI_MLU)
+lines(xx, predict(fit, data.frame(x=xx)), col="red")
+lines(xx, predict(fit2, data.frame(x=xx)), col="green")
+lines(xx, predict(fit3, data.frame(x=xx)), col="blue")
+lines(xx, predict(fit4, data.frame(x=xx)), col="purple")
+```
+
+
 
 Exciting right? Let's check whether the model is doing an alright job at fitting the data. Plot the actual CHI_MLU data against the predictions of the model fitted(model). 
 
@@ -198,6 +274,10 @@ Exciting right? Let's check whether the model is doing an alright job at fitting
 install.packages("ggplot2")
 library(ggplot2)
 ggplot2::effect_plot(quadratic_m5, pred = CHI_MLU, interval = TRUE, plot.points = TRUE)
+
+
+with(df, plot(VISIT, CHI_MLU)) + 
+  abline(linear_m1, lwd = 3, colour = "red")
 
 
 plot(quadratic_m5)
