@@ -75,7 +75,7 @@ Load necessary libraries : what will you need?
 - e.g. something to plot with
 
 ```{r Load Libraries, include = FALSE}
-pacman::p_load(tidyverse,janitor, lme4, ggplot2)
+pacman::p_load(tidyverse,janitor, lme4, lmeTest, ggplot2)
 
 ```
 
@@ -138,6 +138,7 @@ Remember to plot the data first and then to run a statistical test.
 # Creating the model
 linear_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis, df)
 linear_m2 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT:Diagnosis, df)
+linear_m3 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 | SUBJ), df)
 
 # Plotting
 ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
@@ -147,7 +148,10 @@ ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) +
 
 # Model summary
 summary(linear_m1)
-summary(linear_m2)
+summary(linear_m3)
+summary(linear_m1)$adj.r.squared
+r.squaredGLMM(linear_m3)
+
 
 plot(linear_m2)
 # !!! NB !!!: "if you’re seeing stripes in your residual plot, then you’re most likely dealing with some kind of categorical data – and you would need to turn to a somewhat different class of models, such as logistic models"  ... Should we use logistic regression? We are seeing stripes, but on the other hand, the dependent variable (MLU) is not categorical..?
@@ -167,20 +171,31 @@ First build the different models, then compare them to see which one is better.
 df$VISIT2 <- (df$VISIT)^2
 df$VISIT3 <- (df$VISIT)^3
 
-quadratic_m1 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
-quadratic_m2 <- lm(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis, df)
+quadratic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
+quadratic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis, df)
+quadratic_m2.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
+quadratic_m2.2 <- lmer(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis + (1 | SUBJ), df)
 
-summary(quadratic_m1)
-summary(quadratic_m2)
+summary(quadratic_m1.1)
+summary(quadratic_m2.2)
+summary(quadratic_m1.1)
+summary(quadratic_m2.2)
+
+summary(quadratic_m1.1)$adj.r.squared
+summary(quadratic_m1.2)$adj.r.squared
+r.squaredGLMM(quadratic_m2.1)
+r.squaredGLMM(quadratic_m2.2)
 
 
+cubic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis, df)
+cubic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,3, raw = T):Diagnosis, df)
+cubic_m2.1 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
+cubic_m2.2 <- lm(CHI_MLU ~ poly(VISIT,3, raw = T):Diagnosis + (1 | SUBJ), df)
 
-cubic_m1 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis, df)
-cubic_m2 <- lm(CHI_MLU ~ poly(VISIT,3, raw = T):Diagnosis, df)
-
-summary(cubic_m1)
-summary(cubic_m2)
-
+summary(cubic_m1)$adj.r.squared
+summary(cubic_m2)$adj.r.squared
+r.squaredGLMM(cubic_m2.1)
+r.squaredGLMM(cubic_m2.2)
 
 
 
@@ -200,12 +215,12 @@ ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) +
 
 
 
-anova(linear_m1, quadratic_m1, cubic_m1)
+anova(linear_m3, quadratic_m2.1, cubic_m2.1)
 
 pacman::p_load(MuMIn, tidyverse)
 
 #writing AIC values down
-m_aic <- AIC(linear_m1, quadratic_m1, cubic_m1)
+m_aic <- AIC(linear_m1, linear_m3, quadratic_m1.1, quadratic_m2.1, cubic_m1.1, cubic_m2.1)
 
 #assigning weights to the models corresponding to their AIC values
 Weights(m_aic)
@@ -213,13 +228,13 @@ Weights(m_aic)
 
 
 #writing down BIC values
-m_bic <- BIC(linear_m1, quadratic_m1, cubic_m1)
+m_bic <- BIC(linear_m1, linear_m3, quadratic_m1.1, quadratic_m2.1, cubic_m1.1, cubic_m2.1)
 
 #assigning weights to the models corresponding to their AIC values
 Weights(m_bic)
 
 #putting results into one dataframe:
-mdl_com_df <- tibble( Model = c("linear", "quadratic", "cubic"),
+mdl_com_df <- tibble( Model = c("linear", "l", "quadratic", "q", "cubic", "c"),
                           AIC=m_aic$AIC, 
                           AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
                           BIC=m_bic$BIC,
