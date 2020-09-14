@@ -9,7 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(include = FALSE)
 
-library(tidyverse)
 ```
 
 # Assignment 2
@@ -20,66 +19,10 @@ In this assignment you will have to discuss a few important questions (given the
 
 Part 1 - Basic description of language development
 - Describe your sample (n, age, gender, clinical and cognitive features of the two groups) and critically assess whether the groups (ASD and TD) are balanced
-```{r}
-# Importing data from portfolio 1
-df <- read_csv("merged_df_assignment1.csv")
-df$X1 <- NULL
-df$Diagnosis <- as.factor(df$Diagnosis)
-
-# 1.1
-# the number, age, gender, clinical and cognitive features of children in the groups ASD and TD.
-df <- group_by(df, Diagnosis)
-
-df %>% count(mean(Age), sort = TRUE)
-df %>% count(Gender, sort = TRUE)
-df %>% count(Ethnicity, sort = TRUE)
-
-
-mean(df$Socialization, na.rm = T)
-plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(Socialization, na.rm = TRUE))
-# https://stackoverflow.com/questions/23553407/calculating-mean-values-based-on-two-different-groupings-in-a-data-frame
-
-
-```
-
 - Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group). 
-```{r}
-m1 <- lm(CHI_MLU ~ Diagnosis*VISIT, df)
-summary(m1)
-
-
-ggplot(df, aes(x = VISIT, y = CHI_MLU, color = Diagnosis)) +
-  geom_point() + 
-  geom_smooth(method = lm)
-```
-
-
 - Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group). 
-```{r}
-m1 <- lm(CHI_MLU ~ Diagnosis*VISIT, df)
-summary(m1)
-
-
-ggplot(df, aes(x = VISIT, y = CHI_MLU, color = Diagnosis)) +
-  geom_point() + 
-  geom_smooth(method = lm)
-```
-
-
 - Describe how parental use of language (in terms of MLU) changes over time. What do you think is going on?
-```{r}
-
-
-# Could be the scaffolding changing due to the child's linguistic progression
-```
-
-
 - Include individual differences in your model of language development (in children). Identify the best model.
-```{r}
-
-```
-
-
 
 
 
@@ -88,8 +31,12 @@ Part 2 - Model comparison
 - Which individual differences should be included in a model that maximizes your ability to explain/predict new data?
 - Predict a new kid's performance (Bernie) and discuss it against expected performance of the two groups
 
+
+
 Part 3 - Simulations to plan a new study
 - Report and discuss a power analyses identifying how many new kids you would need to replicate the results
+
+
 
 The following involves only Part 1.
 
@@ -136,7 +83,7 @@ Load necessary libraries : what will you need?
 - e.g. something to plot with
 
 ```{r Load Libraries, include = FALSE}
-
+library(tidyverse)
 ```
 
 ### Define your working directory and load the data
@@ -149,24 +96,55 @@ If you opened this Rmd file outside of a project, you will need some code to fin
 - Load the data you saved last time (use read_csv(fileName))
 
 ```{r Load Data, include = FALSE}
+# Importing data from portfolio 1
+df <- read_csv("merged_df_assignment1.csv")
+df$X1 <- NULL
+df$Diagnosis <- as.factor(df$Diagnosis)
+
+# Lærke made sure to correct the misspelling of Bangladeshi.
 
 ```
+
+
+
 
 ### Characterize the participants (Exercise 1)
 
 Identify relevant variables: participants demographic characteristics, diagnosis, ADOS, Verbal IQ, Non Verbal IQ, Socialization, Visit, Number of words used, Number of unique words used, mean length of utterance in both child and parents.
-
 Make sure the variables are in the right format.
-
 Describe the characteristics of the two groups of participants and whether the two groups are well matched.
 
 ```{r descriptive stats, include = FALSE}
+# 1.1
+# the number, age, gender, clinical and cognitive features of children in the groups ASD and TD.
+df <- group_by(df, Diagnosis)
+
+df %>% count(mean(Age), sort = TRUE)
+df %>% count(Gender, sort = TRUE)
+df %>% count(Ethnicity, sort = TRUE)
+
+
+mean(df$Socialization, na.rm = T)
+plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(Socialization, na.rm = TRUE))
+# https://stackoverflow.com/questions/23553407/calculating-mean-values-based-on-two-different-groupings-in-a-data-frame
+
+ggplot(df, aes(x = Ethnicity, fill = Diagnosis))+
+  geom_bar(position = "dodge")
+  
+
+# .....
+# demo: ethnicity, gender, age
+# clinical: 
 
 ```
 
-The sample included mostly young (<20) white males ...
 
+The sample included mostly young (<20) white males ...
 [REPORT THE RESULTS]
+
+
+
+
 
 ## Let's test hypothesis 1: Children with ASD display a language impairment  (Exercise 2)
 
@@ -179,7 +157,12 @@ Remember to plot the data first and then to run a statistical test.
 - Which variable(s) should be included as random factors?
 
 ```{r ex2, include = FALSE}
+ggplot(df, aes(x = VISIT, y = CHI_MLU, color = Diagnosis)) +
+  geom_point() + 
+  geom_smooth(method = lm)
 
+m1 <- lm(CHI_MLU ~ Diagnosis*VISIT, df)
+summary(m1)
 ```
 
 How would you evaluate whether the model is a good model?
@@ -217,6 +200,8 @@ Linguistic development of children MLU is affected by ... [COMPLETE]
 
 ```{r ex3, include = FALSE}
 
+
+# Could be the scaffolding changing due to the child's linguistic progression
 ```
 
 Parent MLU is affected by ... but probably not ...
