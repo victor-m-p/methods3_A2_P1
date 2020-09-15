@@ -166,7 +166,11 @@ new_df <- merge(df, subset, by = "SUBJ")
 lm <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + ADOS | SUBJ), df) # Putting ADOS as a random slope (since we found out in portfolio 1, that ASD and TD children have roughly the same baseline lexicon size, but the TD children develop faster. Thus, the severity should have a say in the slope.). This is not possible though: you can only have within-subject factors as random slpoes.
 lm1 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 | SUBJ), df)
 lm2 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + MOT_MLU | SUBJ), df)
-lm3 <- lmer(CHI_MLU ~ VISIT*Diagnosis.x + (1 + ADOS2| SUBJ), new_df)
+lm3 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)
+lm4 <- lmer(CHI_MLU ~ VISIT*Diagnosis.x + (1 + Diagnosis.x + ADOS2| SUBJ), new_df)
+
+car::vif(lm3)
+mean(car::vif(lm3))
 
 
 - ExpressiveLangRaw or Mullenraw
@@ -227,16 +231,16 @@ quadratic_m3.2 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + 
 quadratic_m3.3 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)  # So, it turns our, that this model is actually better
 
 
-summary(quadratic_m1.1)
+summary(quadratic_m3.3)
 #summary(quadratic_m2.2)
-summary(quadratic_m1.1)
+summary(quadratic_m3.4)
 #summary(quadratic_m2.2)
 
 summary(quadratic_m1.1)$r.squared
 #summary(quadratic_m1.2)$adj.r.squared
 r.squaredGLMM(quadratic_m2.1)
 #r.squaredGLMM(quadratic_m2.2)
-r.squaredGLMM(quadratic_m3.1)
+r.squaredGLMM(quadratic_m3.3)
 
 
 cubic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis, df)
@@ -428,6 +432,24 @@ Remember to report:
 
 [REPORT THE RESULTS]
 Linguistic development of children MLU is affected by ... [COMPLETE]
+
+
+```{r}
+# I would do a VIF on this model to test for multicolinearity, but then we would have had to use the model with the poly(), but I suppose that testing for multicolinearity on the linear model works just as well.
+
+plot(quadratic_m3.3)
+# Looking at plot 1.3 we can see that the  assumption of linearity seems to be met since the plot line is close to zero, and the scattering of the dots suggests homoskedasticity. The mean value of VIF (for the linear model though) is 2.06 which suggests little to moderate multicollinearity.
+
+summary(quadratic_m3.3)
+r.squaredGLMM(quadratic_m3.3)
+# The ANOVA and the AIC and BIC values point to the quadratic model (with MOT_MLU and Diagnosis as random slopes and SUBJ as random intercept) as being the best model. The R^2 shows that 38.6% of the variance is explained by the fixed effects, but with the random effects 82.5% of variance is explained.
+
+# From the summary, we see that ... (how to interpret?)
+
+
+```
+
+
 
 ## Let's test hypothesis 2: Parents speak equally to children with ASD and TD  (Exercise 3)
 
