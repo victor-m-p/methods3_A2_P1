@@ -456,8 +456,107 @@ r.squaredGLMM(quadratic_m3.3)
 ### Hypothesis: Parental MLU changes: i) over time, ii) according to diagnosis
 
 ```{r ex3, include = FALSE}
+m1 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 | SUBJ), df)
+m2 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + CHI_MLU | SUBJ), df)
+m3 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + Diagnosis | SUBJ), df)
+m4 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + Diagnosis + CHI_MLU | SUBJ), df)
+
+
+# m2 and m4 are significantly better than m1 and m3, and m4 is only slightly significantly better than m2 at explaining variance.
+anova(m1, m2, m3, m4)
+anova(m2, m4)
+
+# AIC and BIC say that m2 is the best
+m_aic <- AIC(m1, m2, m3, m4)
+m_bic <- BIC(m1, m2, m3, m4)
+
+mdl_com_df <- tibble( Model = c("m1", "m2", "m3", "m4"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
+
+# So we will use m2
+```
+
+```{r}
+m1 <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 | SUBJ), df)
+m2 <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 + CHI_MLU | SUBJ), df)
+m3 <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 + Diagnosis | SUBJ), df)
+m4 <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 + Diagnosis + CHI_MLU | SUBJ), df)
+
+
+# m2 and m4 are significantly better than m1 and m3, and m4 is only slightly significantly better than m2 at explaining variance.
+anova(m1, m2, m3, m4)
+anova(m2, m4)
+
+# AIC and BIC say that m2 is the best
+m_aic <- AIC(m1, m2, m3, m4)
+m_bic <- BIC(m1, m2, m3, m4)
+
+mdl_com_df <- tibble( Model = c("m1", "m2", "m3", "m4"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
+
+# This one says the same as the one for the linear models (Just checking if it is actually the same results). So we will use m2
+```
+
+
+
+
+```{r ex3, include = FALSE}
+pm1_linear <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + CHI_MLU | SUBJ), df)
+pm2_quadratic <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 + CHI_MLU | SUBJ), df)
+pm3_cubic <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT3 + VISIT*Diagnosis + (1 + CHI_MLU | SUBJ), df)
+
+# Anova says that the quadratic one is the best
+anova(pm1_linear, pm2_quadratic, pm3_cubic)
+
+# AIC and BIC say that the linear one is the best
+m_aic <- AIC(pm1_linear, pm2_quadratic, pm3_cubic)
+m_bic <- BIC(pm1_linear, pm2_quadratic, pm3_cubic)
+
+mdl_com_df <- tibble( Model = c("linear", "quadratic", "cubic"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
+
 
 ```
+
+```{r}
+pmlu_linear <- ggplot(df, aes(VISIT, MOT_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm") +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+pmlu_quadratic <- ggplot(df, aes(VISIT, MOT_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm", formula = y ~ poly(x, 2)) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+print(pmlu_linear)
+print(pmlu_quadratic)
+```
+```{r}
+summary(pm2_linear)
+summary(pm2_quadratic)
+
+
+# Parent mlu is arrected by time, but probably not by diagnosis. Parent mlu seems to increase at the same rate whether the child is ASD or TD.
+```
+
+
+
 
 Parent MLU is affected by ... but probably not ...
 [REPORT THE RESULTS]
