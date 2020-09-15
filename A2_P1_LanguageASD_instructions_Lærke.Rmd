@@ -75,7 +75,7 @@ Load necessary libraries : what will you need?
 - e.g. something to plot with
 
 ```{r Load Libraries, include = FALSE}
-pacman::p_load(tidyverse,janitor, lme4, lmeTest, ggplot2)
+pacman::p_load(tidyverse,janitor, lme4, lmerTest, ggplot2, MuMIn)
 
 ```
 
@@ -231,7 +231,9 @@ mdl_com_df <- tibble( Model = c("linear", "l", "quadratic", "q", "cubic", "c"),
 
 mdl_com_df #Best model: Lowest AIC/BIC or largest AIC_Weight/BIC_Wegiht (choose what metric you like more, they function absolutely the same way)
 ``` 
-```
+
+
+Exciting right? Let's check whether the model is doing an alright job at fitting the data. Plot the actual CHI_MLU data against the predictions of the model fitted(model). 
 
 ```{r}
 #fit first degree polynomial equation:
@@ -256,9 +258,6 @@ lines(xx, predict(fit4, data.frame(x=xx)), col="purple")
 ```
 
 
-
-Exciting right? Let's check whether the model is doing an alright job at fitting the data. Plot the actual CHI_MLU data against the predictions of the model fitted(model). 
-
 ```{r}
 install.packages("ggplot2")
 library(ggplot2)
@@ -277,19 +276,65 @@ plot(quadratic_m5)
 plot(df$VISIT, df$CHI_MLU, main = "curve comparison",  las = 1)
 abline(linear_m1, lwd = 3, colour = "red")
 
-# stat_smooth does not allow multiple regression.. what to do...? Is it because it isn't 2d anymore? But it is. idk
-ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
-  geom_point() + 
-  geom_smooth(se = FALSE, method = "lm", formula = y ~ poly(x, 2) : z) +
-  ggtitle('Development of MLU for children with ASD and TD over time')
-
-
-
 
 plot(q,noisy.y,col='deepskyblue4',xlab='q',main='Observed data')
 lines(q,y,col='firebrick1',lwd=3)
 
+
+
+
+
+############### This is as close as I get. This is exactly like the first linear one, but it does not have the random intercepts, nor is diagnosis a predictor.
+
+# stat_smooth does not allow multiple regression.. what to do...? Is it because it isn't 2d anymore? But it is. idk
+a <- ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm", formula = y ~ x + poly(x, 2)) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+b <- ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm", formula = y ~ poly(x, 2)) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+
+print(a)
+print(b)
+
 ```
+
+
+
+
+```{r}
+#These two look exactly the same to me, so maybe the interaction is in fact included as soon as you use the colour= function.
+
+ggplot(df, aes(VISIT, CHI_MLU, group = interaction(Diagnosis), colour = Diagnosis)) +
+  geom_point() + 
+  geom_smooth(method = lm) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+ggplot(df, aes(VISIT, CHI_MLU, group = interaction(Diagnosis), colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(method = lm) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+```
+
+
+```{r}
+model <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df) # This is the quadratic model
+predicted_df <- data.frame(MLU_predict = predict(model, df), visit = df$VISIT) # Adding model fits to df
+
+ggplot(df, aes(VISIT, CHI_MLU, group = interaction(Diagnosis), colour = Diagnosis)) + 
+  geom_point() + 
+  ggtitle('Development of MLU for children with ASD and TD over time') + 
+  geom_line(data = fortify(model), aes(x = VISIT, y = .fitted))
+
+
+```
+
+
+
 
 Now it's time to report our results.
 Remember to report:
