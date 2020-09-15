@@ -78,15 +78,6 @@ Load necessary libraries : what will you need?
 ```{r Load Libraries, include = FALSE}
 read_csv("/Users/al/RStudio/Semester 3/Experimental-Methods-3/Assignment 2/methods3_A2_P1/merged_df_assignment1.csv")
 
-ggplot(merged_df_assignment1, aes(x=Gender)+
-         geom_histogram()+
-         geom_smooth
-       
-ggplot(merged_df_assignment1, aes(x= Gender))+
-  geom_histogram(aes(y = ..density..), binwidth = 1)+
-  stat_function(fun = dnorm, args = list(mean = mean(merged_df_assignment1$Gender, na.rm = TRUE)
-,  sd = sd(merged_df_assignment1$Gender, na.rm = TRUE)), color = "red", size = 1)+
-  ggtitle("")
 
 ```
 
