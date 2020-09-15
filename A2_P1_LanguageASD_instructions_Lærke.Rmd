@@ -134,7 +134,54 @@ Remember to plot the data first and then to run a statistical test.
 - Which variable(s) should be included as fixed factors?
 - Which variable(s) should be included as random factors?
 
+
+## Trying to figure out which random effects we might want
+```{r}
+# Subsetting the columns that we want to work with:
+subset <- select(df, SUBJ, VISIT, ADOS, MullenRaw, ExpressiveLangRaw, Socialization)
+
+# Overwriting the clinical scores from visits 2-6 with the scores from visit 1 for each participant:
+
+# have a dataset with 1 row per name from the 1st visit only and when it merges with the merged_df (after having renamed ADOS to ADOS1 etc of course) the visit 1 values should be copied to the other 5 visits as well in columns ADOS1 etc. and stay original in the original ADOS column. remember to remove column VISIT in subset_2f before merging with merged_df.
+
+# only including visit 1 in the subset
+subset <- filter(subset, VISIT == 1)
+
+# deleting the visit column
+subset <- select(subset, -VISIT)
+
+# rename clinical measures variables
+subset <- dplyr::rename(subset, ADOS2 = ADOS)
+subset <- dplyr::rename(subset, MullenRaw2 = MullenRaw)
+subset <- dplyr::rename(subset, ExpressiveLangRaw2 = ExpressiveLangRaw)
+subset <- dplyr::rename(subset, Socialization2 = Socialization)
+
+
+# merging the subset_2f with merged_df
+new_df <- merge(df, subset, by = "SUBJ")
+
+
+
+
+lm <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + ADOS | SUBJ), df) # Putting ADOS as a random slope (since we found out in portfolio 1, that ASD and TD children have roughly the same baseline lexicon size, but the TD children develop faster. Thus, the severity should have a say in the slope.). This is not possible though: you can only have within-subject factors as random slpoes.
+lm1 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 | SUBJ), df)
+lm2 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + MOT_MLU | SUBJ), df)
+lm3 <- lmer(CHI_MLU ~ VISIT*Diagnosis.x + (1 + ADOS2| SUBJ), new_df)
+
+
+- ExpressiveLangRaw or Mullenraw
+- Socialization
+- ADOS
+
+anova(lm1, lm3)
+
+?isSingular
+```
+
+
+
 ```{r ex2, include = FALSE}
+
 # Creating the model
 linear_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis, df)
 #linear_m2 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT:Diagnosis, df)
@@ -175,6 +222,10 @@ quadratic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
 #quadratic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis, df)
 quadratic_m2.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
 #quadratic_m2.2 <- lmer(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis + (1 | SUBJ), df)
+quadratic_m3.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + MOT_MLU | SUBJ), df)
+quadratic_m3.2 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis | SUBJ), df)
+quadratic_m3.3 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)  # So, it turns our, that this model is actually better
+
 
 summary(quadratic_m1.1)
 #summary(quadratic_m2.2)
@@ -185,6 +236,7 @@ summary(quadratic_m1.1)$r.squared
 #summary(quadratic_m1.2)$adj.r.squared
 r.squaredGLMM(quadratic_m2.1)
 #r.squaredGLMM(quadratic_m2.2)
+r.squaredGLMM(quadratic_m3.1)
 
 
 cubic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis, df)
@@ -231,6 +283,38 @@ mdl_com_df <- tibble( Model = c("linear", "l", "quadratic", "q", "cubic", "c"),
 
 mdl_com_df #Best model: Lowest AIC/BIC or largest AIC_Weight/BIC_Wegiht (choose what metric you like more, they function absolutely the same way)
 ``` 
+
+
+```{r}
+anova(quadratic_m2.1, quadratic_m3.1, quadratic_m3.2, quadratic_m3.3)
+
+pacman::p_load(MuMIn, tidyverse)
+
+#writing AIC values down
+m_aic <- AIC(quadratic_m2.1, quadratic_m3.1, quadratic_m3.2, quadratic_m3.3)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_aic)
+
+
+
+#writing down BIC values
+m_bic <- BIC(quadratic_m2.1, quadratic_m3.1, quadratic_m3.2, quadratic_m3.3)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_bic)
+
+#putting results into one dataframe:
+mdl_com_df <- tibble( Model = c("quadratic_m2.1", "quadratic_m3.1", "quadratic_m3.2", "quadratic_m3.3"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+
+mdl_com_df #Best model: Lowest AIC/BIC or largest AIC_Weight/BIC_Wegiht (choose what metric you like more, they function absolutely the same way)
+```
+
 
 
 Exciting right? Let's check whether the model is doing an alright job at fitting the data. Plot the actual CHI_MLU data against the predictions of the model fitted(model). 
