@@ -75,6 +75,7 @@ Load necessary libraries : what will you need?
 - e.g. something to plot with
 
 ```{r Load Libraries, include = FALSE}
+pacman::p_load(tidyverse,janitor, lme4, lmerTest, ggplot2, MuMIn)
 
 ```
 
@@ -88,6 +89,8 @@ If you opened this Rmd file outside of a project, you will need some code to fin
 - Load the data you saved last time (use read_csv(fileName))
 
 ```{r Load Data, include = FALSE}
+df <- read_csv("merged_df_assignment1.csv")
+df$X1 <- NULL
 
 ```
 
@@ -100,6 +103,20 @@ Make sure the variables are in the right format.
 Describe the characteristics of the two groups of participants and whether the two groups are well matched.
 
 ```{r descriptive stats, include = FALSE}
+# the number, age, gender, clinical and cognitive features of children in the groups ASD and TD.
+df <- group_by(df, Diagnosis)
+
+df %>% count(mean(Age, na.rm = TRUE), sort = TRUE)
+
+df %>% count(Gender, sort = TRUE)
+
+df %>% count(Ethnicity, sort = TRUE)
+ggplot(df, aes(fill = Diagnosis, x = Ethnicity)) + 
+  geom_bar(position = "dodge")
+
+
+mean(df$Socialization, na.rm = T)
+plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(Socialization, na.rm = TRUE))
 
 ```
 
@@ -117,14 +134,84 @@ Remember to plot the data first and then to run a statistical test.
 - Which variable(s) should be included as fixed factors?
 - Which variable(s) should be included as random factors?
 
+
+## Trying to figure out which random effects we might want
+```{r}
+# Subsetting the columns that we want to work with:
+subset <- select(df, SUBJ, VISIT, ADOS, MullenRaw, ExpressiveLangRaw, Socialization)
+
+# Overwriting the clinical scores from visits 2-6 with the scores from visit 1 for each participant:
+
+# have a dataset with 1 row per name from the 1st visit only and when it merges with the merged_df (after having renamed ADOS to ADOS1 etc of course) the visit 1 values should be copied to the other 5 visits as well in columns ADOS1 etc. and stay original in the original ADOS column. remember to remove column VISIT in subset_2f before merging with merged_df.
+
+# only including visit 1 in the subset
+subset <- filter(subset, VISIT == 1)
+
+# deleting the visit column
+subset <- select(subset, -VISIT)
+
+# rename clinical measures variables
+subset <- dplyr::rename(subset, ADOS2 = ADOS)
+subset <- dplyr::rename(subset, MullenRaw2 = MullenRaw)
+subset <- dplyr::rename(subset, ExpressiveLangRaw2 = ExpressiveLangRaw)
+subset <- dplyr::rename(subset, Socialization2 = Socialization)
+
+
+# merging the subset_2f with merged_df
+new_df <- merge(df, subset, by = "SUBJ")
+
+
+
+
+lm <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + ADOS | SUBJ), df) # Putting ADOS as a random slope (since we found out in portfolio 1, that ASD and TD children have roughly the same baseline lexicon size, but the TD children develop faster. Thus, the severity should have a say in the slope.). This is not possible though: you can only have within-subject factors as random slpoes.
+lm1 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 | SUBJ), df)
+lm2 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + MOT_MLU | SUBJ), df)
+lm3 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)
+lm4 <- lmer(CHI_MLU ~ VISIT*Diagnosis.x + (1 + Diagnosis.x + ADOS2| SUBJ), new_df)
+
+car::vif(lm3)
+mean(car::vif(lm3))
+
+
+- ExpressiveLangRaw or Mullenraw
+- Socialization
+- ADOS
+
+anova(lm1, lm3)
+
+?isSingular
+```
+
+
+
 ```{r ex2, include = FALSE}
 
+# Creating the model
+linear_m1 <- lm(CHI_MLU ~ VISIT*Diagnosis, df)
+#linear_m2 <- lm(CHI_MLU ~ VISIT + Diagnosis + VISIT:Diagnosis, df)
+linear_m3 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 | SUBJ), df)
+
+# Plotting
+ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(method = lm) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+# Model summary
+summary(linear_m1)
+summary(linear_m3)
+summary(linear_m1)$r.squared
+r.squaredGLMM(linear_m3)
+
+
+plot(linear_m2)
+# !!! NB !!!: "if you’re seeing stripes in your residual plot, then you’re most likely dealing with some kind of categorical data – and you would need to turn to a somewhat different class of models, such as logistic models"  ... Should we use logistic regression? We are seeing stripes, but on the other hand, the dependent variable (MLU) is not categorical..?
 ```
 
 How would you evaluate whether the model is a good model?
 
 ```{r ex2 evaluate, include = FALSE}
-
+# Looking at the r-squared?
 ```
 
 Not too good, right? Let's check whether a growth curve model is better.
@@ -132,14 +219,210 @@ Remember: a growth curve model assesses whether changes in time can be described
 First build the different models, then compare them to see which one is better.
 
 ```{r ex2 growth curve, include = FALSE}
+df$VISIT2 <- (df$VISIT)^2
+df$VISIT3 <- (df$VISIT)^3
 
+quadratic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
+#quadratic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis, df)
+quadratic_m2.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
+#quadratic_m2.2 <- lmer(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis + (1 | SUBJ), df)
+quadratic_m3.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + MOT_MLU | SUBJ), df)
+quadratic_m3.2 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis | SUBJ), df)
+quadratic_m3.3 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)  # So, it turns our, that this model is actually better
+
+
+summary(quadratic_m3.3)
+#summary(quadratic_m2.2)
+summary(quadratic_m3.4)
+#summary(quadratic_m2.2)
+
+summary(quadratic_m1.1)$r.squared
+#summary(quadratic_m1.2)$adj.r.squared
+r.squaredGLMM(quadratic_m2.1)
+#r.squaredGLMM(quadratic_m2.2)
+r.squaredGLMM(quadratic_m3.3)
+
+
+cubic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis, df)
+#cubic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,3, raw = T):Diagnosis, df)
+cubic_m2.1 <- lm(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
+#cubic_m2.2 <- lm(CHI_MLU ~ poly(VISIT,3, raw = T):Diagnosis + (1 | SUBJ), df)
+
+summary(cubic_m1)$r.squared
+#summary(cubic_m2)$adj.r.squared
+r.squaredGLMM(cubic_m2.1)
+#r.squaredGLMM(cubic_m2.2)
+
+
+
+
+
+
+
+anova(linear_m3, quadratic_m2.1, cubic_m2.1)
+
+pacman::p_load(MuMIn, tidyverse)
+
+#writing AIC values down
+m_aic <- AIC(linear_m1, linear_m3, quadratic_m1.1, quadratic_m2.1, cubic_m1.1, cubic_m2.1)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_aic)
+
+
+
+#writing down BIC values
+m_bic <- BIC(linear_m1, linear_m3, quadratic_m1.1, quadratic_m2.1, cubic_m1.1, cubic_m2.1)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_bic)
+
+#putting results into one dataframe:
+mdl_com_df <- tibble( Model = c("linear", "l", "quadratic", "q", "cubic", "c"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+
+mdl_com_df #Best model: Lowest AIC/BIC or largest AIC_Weight/BIC_Wegiht (choose what metric you like more, they function absolutely the same way)
+``` 
+
+
+```{r}
+anova(quadratic_m2.1, quadratic_m3.1, quadratic_m3.2, quadratic_m3.3)
+
+pacman::p_load(MuMIn, tidyverse)
+
+#writing AIC values down
+m_aic <- AIC(quadratic_m2.1, quadratic_m3.1, quadratic_m3.2, quadratic_m3.3)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_aic)
+
+
+
+#writing down BIC values
+m_bic <- BIC(quadratic_m2.1, quadratic_m3.1, quadratic_m3.2, quadratic_m3.3)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_bic)
+
+#putting results into one dataframe:
+mdl_com_df <- tibble( Model = c("quadratic_m2.1", "quadratic_m3.1", "quadratic_m3.2", "quadratic_m3.3"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+
+mdl_com_df #Best model: Lowest AIC/BIC or largest AIC_Weight/BIC_Wegiht (choose what metric you like more, they function absolutely the same way)
 ```
+
+
 
 Exciting right? Let's check whether the model is doing an alright job at fitting the data. Plot the actual CHI_MLU data against the predictions of the model fitted(model). 
 
 ```{r}
+#fit first degree polynomial equation:
+fit  <- lm(df$CHI_MLU ~ df$VISIT*df$Diagnosis)
+
+#second degree
+fit2 <- lm(CHI_MLU ~ poly(VISIT,2,raw=TRUE)*Diagnosis, df)
+
+#third degree
+fit3 <- lm(CHI_MLU ~ poly(VISIT,3,raw=TRUE)*Diagnosis, df)
+
+#fourth degree
+fit4 <- lm(CHI_MLU ~ poly(VISIT,4,raw=TRUE)*Diagnosis, df)
+
+#generate range of 50 numbers starting from 30 and ending at 160
+xx <- seq(1,6, length=6)
+plot(df$VISIT, df$CHI_MLU)
+lines(xx, predict(fit, data.frame(x=xx)), col="red")
+lines(xx, predict(fit2, data.frame(x=xx)), col="green")
+lines(xx, predict(fit3, data.frame(x=xx)), col="blue")
+lines(xx, predict(fit4, data.frame(x=xx)), col="purple")
+```
+
+
+```{r}
+install.packages("ggplot2")
+library(ggplot2)
+ggplot2::effect_plot(quadratic_m5, pred = CHI_MLU, interval = TRUE, plot.points = TRUE)
+
+
+with(df, plot(VISIT, CHI_MLU)) + 
+  abline(linear_m1, lwd = 3, colour = "red")
+
+
+plot(quadratic_m5)
+
+
+# I wanted to plot the different lines, but I don't know how.
+
+plot(df$VISIT, df$CHI_MLU, main = "curve comparison",  las = 1)
+abline(linear_m1, lwd = 3, colour = "red")
+
+
+plot(q,noisy.y,col='deepskyblue4',xlab='q',main='Observed data')
+lines(q,y,col='firebrick1',lwd=3)
+
+
+
+
+
+############### This is as close as I get. This is exactly like the first linear one, but it does not have the random intercepts, nor is diagnosis a predictor.
+
+# stat_smooth does not allow multiple regression.. what to do...? Is it because it isn't 2d anymore? But it is. idk
+a <- ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm", formula = y ~ x + poly(x, 2)) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+b <- ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm", formula = y ~ poly(x, 2)) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+
+print(a)
+print(b)
 
 ```
+
+
+
+
+```{r}
+#These two look exactly the same to me, so maybe the interaction is in fact included as soon as you use the colour= function.
+
+ggplot(df, aes(VISIT, CHI_MLU, group = interaction(Diagnosis), colour = Diagnosis)) +
+  geom_point() + 
+  geom_smooth(method = lm) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+ggplot(df, aes(VISIT, CHI_MLU, group = interaction(Diagnosis), colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(method = lm) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+```
+
+
+```{r}
+model <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df) # This is the quadratic model
+predicted_df <- data.frame(MLU_predict = predict(model, df), visit = df$VISIT) # Adding model fits to df
+
+ggplot(df, aes(VISIT, CHI_MLU, group = interaction(Diagnosis), colour = Diagnosis)) + 
+  geom_point() + 
+  ggtitle('Development of MLU for children with ASD and TD over time') + 
+  geom_line(data = fortify(model), aes(x = VISIT, y = .fitted))
+
+
+```
+
+
+
 
 Now it's time to report our results.
 Remember to report:
@@ -150,13 +433,130 @@ Remember to report:
 [REPORT THE RESULTS]
 Linguistic development of children MLU is affected by ... [COMPLETE]
 
+
+```{r}
+# I would do a VIF on this model to test for multicolinearity, but then we would have had to use the model with the poly(), but I suppose that testing for multicolinearity on the linear model works just as well.
+
+plot(quadratic_m3.3)
+# Looking at plot 1.3 we can see that the  assumption of linearity seems to be met since the plot line is close to zero, and the scattering of the dots suggests homoskedasticity. The mean value of VIF (for the linear model though) is 2.06 which suggests little to moderate multicollinearity.
+
+summary(quadratic_m3.3)
+r.squaredGLMM(quadratic_m3.3)
+# The ANOVA and the AIC and BIC values point to the quadratic model (with MOT_MLU and Diagnosis as random slopes and SUBJ as random intercept) as being the best model. The R^2 shows that 38.6% of the variance is explained by the fixed effects, but with the random effects 82.5% of variance is explained.
+
+# From the summary, we see that ... (how to interpret?)
+
+
+```
+
+
+
 ## Let's test hypothesis 2: Parents speak equally to children with ASD and TD  (Exercise 3)
 
 ### Hypothesis: Parental MLU changes: i) over time, ii) according to diagnosis
 
 ```{r ex3, include = FALSE}
+m1 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 | SUBJ), df)
+m2 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + CHI_MLU | SUBJ), df)
+m3 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + Diagnosis | SUBJ), df)
+m4 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + Diagnosis + CHI_MLU | SUBJ), df)
+
+
+# m2 and m4 are significantly better than m1 and m3, and m4 is only slightly significantly better than m2 at explaining variance.
+anova(m1, m2, m3, m4)
+anova(m2, m4)
+
+# AIC and BIC say that m2 is the best
+m_aic <- AIC(m1, m2, m3, m4)
+m_bic <- BIC(m1, m2, m3, m4)
+
+mdl_com_df <- tibble( Model = c("m1", "m2", "m3", "m4"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
+
+# So we will use m2
+```
+
+```{r}
+m1 <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 | SUBJ), df)
+m2 <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 + CHI_MLU | SUBJ), df)
+m3 <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 + Diagnosis | SUBJ), df)
+m4 <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 + Diagnosis + CHI_MLU | SUBJ), df)
+
+
+# m2 and m4 are significantly better than m1 and m3, and m4 is only slightly significantly better than m2 at explaining variance.
+anova(m1, m2, m3, m4)
+anova(m2, m4)
+
+# AIC and BIC say that m2 is the best
+m_aic <- AIC(m1, m2, m3, m4)
+m_bic <- BIC(m1, m2, m3, m4)
+
+mdl_com_df <- tibble( Model = c("m1", "m2", "m3", "m4"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
+
+# This one says the same as the one for the linear models (Just checking if it is actually the same results). So we will use m2
+```
+
+
+
+
+```{r ex3, include = FALSE}
+pm1_linear <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + CHI_MLU | SUBJ), df)
+pm2_quadratic <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 + CHI_MLU | SUBJ), df)
+pm3_cubic <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT3 + VISIT*Diagnosis + (1 + CHI_MLU | SUBJ), df)
+
+# Anova says that the quadratic one is the best
+anova(pm1_linear, pm2_quadratic, pm3_cubic)
+
+# AIC and BIC say that the linear one is the best
+m_aic <- AIC(pm1_linear, pm2_quadratic, pm3_cubic)
+m_bic <- BIC(pm1_linear, pm2_quadratic, pm3_cubic)
+
+mdl_com_df <- tibble( Model = c("linear", "quadratic", "cubic"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
+
 
 ```
+
+```{r}
+pmlu_linear <- ggplot(df, aes(VISIT, MOT_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm") +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+pmlu_quadratic <- ggplot(df, aes(VISIT, MOT_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm", formula = y ~ poly(x, 2)) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+print(pmlu_linear)
+print(pmlu_quadratic)
+```
+```{r}
+summary(pm2_linear)
+summary(pm2_quadratic)
+
+
+# Parent mlu is arrected by time, but probably not by diagnosis. Parent mlu seems to increase at the same rate whether the child is ASD or TD.
+```
+
+
+
 
 Parent MLU is affected by ... but probably not ...
 [REPORT THE RESULTS]

@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(include = FALSE)
+library(tidyverse)
 ```
 
 # Assignment 2
@@ -75,6 +76,8 @@ Load necessary libraries : what will you need?
 - e.g. something to plot with
 
 ```{r Load Libraries, include = FALSE}
+read_csv("/Users/al/RStudio/Semester 3/Experimental-Methods-3/Assignment 2/methods3_A2_P1/merged_df_assignment1.csv")
+
 
 ```
 
@@ -88,6 +91,8 @@ If you opened this Rmd file outside of a project, you will need some code to fin
 - Load the data you saved last time (use read_csv(fileName))
 
 ```{r Load Data, include = FALSE}
+
+
 
 ```
 
