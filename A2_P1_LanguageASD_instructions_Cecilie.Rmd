@@ -101,8 +101,41 @@ Make sure the variables are in the right format.
 
 Describe the characteristics of the two groups of participants and whether the two groups are well matched.
 
-```{r descriptive stats, include = FALSE}
+Part 1 - Basic description of language development
+- Describe your sample (n, age, gender, clinical and cognitive features of the two groups) and critically assess whether the groups (ASD and TD) are balanced
+- Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group). 
 
+- Include individual differences in your model of language development (in children). Identify the best model.
+
+```{r descriptive stats, include = FALSE}
+ggplot(df, aes(x = df$Diagnosis, y = df$Age, color = Gender)) +
+geom_point()
+```
+
+
+
+
+```{r}
+
+```
+
+- Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group).
+```{r descriptive stats, include = FALSE}
+ 
+
+```
+
+
+- Describe how parental use of language (in terms of MLU) changes over time. What do you think is going on?
+```{r}
+
+
+
+```
+
+ 
+
+ 
 ```
 
 The sample included mostly young (<20) white males ...
