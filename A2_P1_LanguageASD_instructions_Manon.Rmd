@@ -133,11 +133,14 @@ plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(MullenRaw, na.rm = TRUE))
 plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(ExpressiveLangRaw, na.rm = TRUE))
 
 
-ggplot(df, aes(x = Ethnicity, fill = Diagnosis))+
-  geom_bar(position = "dodge")
+ggplot(df, aes(x = Diagnosis, fill = Ethnicity))+
+  geom_bar() +
+  ggtitle("Plot 1.2 - Ethnic representation in the two diagnostic groups")
 
-ggplot(df, aes(x = Gender, fill = Diagnosis))+
-  geom_bar(position = "dodge")  
+ggplot(df, aes(x = Diagnosis, fill = Gender))+
+  geom_bar() +
+  ggtitle("Plot 1.1 - Gender representation in the two diagnostic groups")
+  
 
 # .....
 # demo: ethnicity, gender, age
