@@ -639,25 +639,66 @@ completeFun <- function(data, desiredCols) {
 }
 
 new_df <- completeFun(new_df, "Age")
+
+new_df <- completeFun(new_df, "Gender")
+new_df <- completeFun(new_df, "Socialization")
 ```
 
 
 
 ```{r}
+
 model1 <- lmer(CHI_MLU ~ VISIT * Diagnosis  + (1 | SUBJ), new_df)
 model2 <- lmer(CHI_MLU ~ Age * Diagnosis  + (1 | SUBJ), new_df)
-model3 <- lmer(CHI_MLU ~ Age * ADOS2  + (1 | SUBJ), new_df)
-model4 <- lmer(CHI_MLU ~ VISIT * ADOS2  + (1 | SUBJ), new_df)
-model5 <- lmer(CHI_MLU ~ Age * ADOS2  + (1 + MOT_MLU | SUBJ), new_df)
+model3 <- lmer(CHI_MLU ~ VISIT * ADOS2  + (1 | SUBJ), new_df)
+model4 <- lmer(CHI_MLU ~ Age * ADOS2  + (1 | SUBJ), new_df)
+
+anova(model1, model2, model3, model4)
+
+model5 <- lmer(CHI_MLU ~ Age * ADOS2 + MOT_MLU + (1 | SUBJ), new_df)
+model6 <- lmer(CHI_MLU ~ Age * ADOS2 + Gender + (1 | SUBJ), new_df)
+model7 <- lmer(CHI_MLU ~ Age * ADOS2 + MullenRaw + (1 | SUBJ), new_df)
+model8 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + (1 | SUBJ), new_df)
+model9 <- lmer(CHI_MLU ~ Age * ADOS2 + Socialization + (1 | SUBJ), new_df)
+
+# AIC and BIC say that the linear one is the best
+m_aic <- AIC(model4, model5, model6, model7, model8, model9)
+m_bic <- BIC(model4, model5, model6, model7, model8, model9)
+
+mdl_com_df <- tibble( Model = c("model4", "model5", "model6", "model7", "model8", "model9"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
 
 
-model5 <- lmer(CHI_MLU ~ Age * Diagnosis  + (1 + Diagnosis| SUBJ), new_df)
+model10 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + Socialization + (1 | SUBJ), new_df)
+model11 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + MOT_MLU + (1 | SUBJ), new_df)
+model12 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + Gender + (1 | SUBJ), new_df)
+model13 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + MullenRaw + (1 | SUBJ), new_df)
+
+# AIC and BIC say that the linear one is the best
+m_aic <- AIC(model8, model10, model11, model12, model13)
+m_bic <- BIC(model8, model10, model11, model12, model13)
+
+mdl_com_df <- tibble( Model = c("model8", "model10", "model11", "model12", "model13"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
 
 
-anova(model1, model2, model3, model4, model5)
 
-r.squaredGLMM(model5)
+
+r.squaredGLMM(model8)
+
 ```
+
+
 
 
 
