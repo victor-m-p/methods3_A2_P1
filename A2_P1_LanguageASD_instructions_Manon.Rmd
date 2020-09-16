@@ -119,7 +119,7 @@ Describe the characteristics of the two groups of participants and whether the t
 # the number, age, gender, clinical and cognitive features of children in the groups ASD and TD.
 df <- group_by(df, Diagnosis)
 
-df %>% count(mean(Age), sort = TRUE)
+df %>% count(mean(Age, na.rm = TRUE), sort = TRUE)
 df %>% count(Gender, sort = TRUE)
 df %>% count(Ethnicity, sort = TRUE)
 
@@ -163,6 +163,14 @@ ggplot(df, aes(x = VISIT, y = CHI_MLU, color = Diagnosis)) +
 
 m1 <- lm(CHI_MLU ~ Diagnosis*VISIT, df)
 summary(m1)
+# D*V, SUBJ intercept, 
+
+
+
+lmer1 <- lme4::lmer(CHI_MLU ~ Diagnosis*VISIT + (1 | SUBJ), df)
+MuMIn::r.squaredGLMM(lmer1)
+
+
 ```
 
 How would you evaluate whether the model is a good model?
@@ -176,12 +184,24 @@ Remember: a growth curve model assesses whether changes in time can be described
 First build the different models, then compare them to see which one is better.
 
 ```{r ex2 growth curve, include = FALSE}
+# how does the model 'move' ? and can we check any polynomic models without having to check them all?
+
 
 ```
 
 Exciting right? Let's check whether the model is doing an alright job at fitting the data. Plot the actual CHI_MLU data against the predictions of the model fitted(model). 
 
 ```{r}
+
+
+
+
+
+# visualizing our quardratic model
+# https://rstudio-pubs-static.s3.amazonaws.com/97588_c25207f9c37346fea9c9418f70390ec0.html
+quadratic_m2.1 <- lme4::lmer(CHI_MLU ~ VISIT + (df$VISIT)^2 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
+summary(quadratic_m2.1)
+MuMIn::r.squaredGLMM(quadratic_m2.1)
 
 ```
 
@@ -199,9 +219,38 @@ Linguistic development of children MLU is affected by ... [COMPLETE]
 ### Hypothesis: Parental MLU changes: i) over time, ii) according to diagnosis
 
 ```{r ex3, include = FALSE}
-
-
 # Could be the scaffolding changing due to the child's linguistic progression
+
+# visualizing mother LMU changes over time
+ggplot(df, aes(x = VISIT, y = MOT_MLU)) +
+  geom_point() +
+  geom_smooth(method = lm)
+
+# mean mother MLU for children in each diagnostic group
+df %>% count(mean(MOT_MLU, na.rm = TRUE), sort = FALSE)
+
+# visualizing mother LMU changes over time, by child's diagnosis
+ggplot(df, aes(x = VISIT, y = MOT_MLU, color = Diagnosis)) +
+  geom_point() +
+  geom_smooth(method = lm)
+
+# it seems from the visualizations that parental MLU does change over time and also according to diagnosis. Let's make a model
+
+
+
+
+parental_MLU_model <- lm(MOT_MLU ~ VISIT*Diagnosis, df)
+summary(parental_MLU_model)
+
+
+
+# The parent MLU seems to be contingient on the child's abilities, so typically developing children with better linguisitic abilities have higher MOT_MLU
+# and older children in general with better linguistic abilites also have higher MOT_MLU
+
+ggplot(df, aes(x = CHI_MLU, y = MOT_MLU, color = Diagnosis)) +
+  geom_point() + 
+  geom_smooth(method = lm)
+
 ```
 
 Parent MLU is affected by ... but probably not ...
@@ -213,6 +262,7 @@ Your task now is to figure out how to best describe the children linguistic traj
 
 
 ```{r ex4, include = FALSE}
+# use Age instead of VISIT :-D
 
 ```
 
