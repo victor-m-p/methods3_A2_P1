@@ -125,12 +125,19 @@ df %>% count(Ethnicity, sort = TRUE)
 
 
 mean(df$Socialization, na.rm = T)
+
+
 plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(Socialization, na.rm = TRUE))
 # https://stackoverflow.com/questions/23553407/calculating-mean-values-based-on-two-different-groupings-in-a-data-frame
+plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(MullenRaw, na.rm = TRUE))
+plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(ExpressiveLangRaw, na.rm = TRUE))
+
 
 ggplot(df, aes(x = Ethnicity, fill = Diagnosis))+
   geom_bar(position = "dodge")
-  
+
+ggplot(df, aes(x = Gender, fill = Diagnosis))+
+  geom_bar(position = "dodge")  
 
 # .....
 # demo: ethnicity, gender, age
@@ -233,6 +240,11 @@ df %>% count(mean(MOT_MLU, na.rm = TRUE), sort = FALSE)
 ggplot(df, aes(x = VISIT, y = MOT_MLU, color = Diagnosis)) +
   geom_point() +
   geom_smooth(method = lm)
+
+#quardratic
+ggplot(df, aes(x = VISIT, y = MOT_MLU, color = Diagnosis)) +
+  geom_point() +
+  geom_smooth(method = lm, formula = y ~ poly(x,2))
 
 # it seems from the visualizations that parental MLU does change over time and also according to diagnosis. Let's make a model
 
