@@ -602,6 +602,65 @@ Parent MLU is affected by ... but probably not ...
 
 Your task now is to figure out how to best describe the children linguistic trajectory. The dataset contains a bunch of additional demographic, cognitive and clinical variables (e.g.verbal and non-verbal IQ). Try them out and identify the statistical models that best describes your data (that is, the children's MLU). Describe how you selected the best model and send the code to run the model to Victor and Byurakn.
 
+```{r}
+new_df <- read_csv("merged_df_assignment1.csv")
+new_df$X1 <- NULL
+
+# Subsetting the columns that we want to work with:
+subset <- select(new_df, SUBJ, VISIT, ADOS, MullenRaw, ExpressiveLangRaw, Socialization)
+
+# Overwriting the clinical scores from visits 2-6 with the scores from visit 1 for each participant:
+
+# have a dataset with 1 row per name from the 1st visit only and when it merges with the merged_df (after having renamed ADOS to ADOS1 etc of course) the visit 1 values should be copied to the other 5 visits as well in columns ADOS1 etc. and stay original in the original ADOS column. remember to remove column VISIT in subset_2f before merging with merged_df.
+
+# only including visit 1 in the subset
+subset <- filter(subset, VISIT == 1)
+
+# deleting the visit column
+subset <- select(subset, -VISIT)
+
+# rename clinical measures variables
+subset <- dplyr::rename(subset, ADOS2 = ADOS)
+subset <- dplyr::rename(subset, MullenRaw2 = MullenRaw)
+subset <- dplyr::rename(subset, ExpressiveLangRaw2 = ExpressiveLangRaw)
+subset <- dplyr::rename(subset, Socialization2 = Socialization)
+
+
+# merging the subset_2f with merged_df
+new_df <- merge(new_df, subset, by = "SUBJ")
+
+
+
+
+# Removing the rows where the age is NA
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+new_df <- completeFun(new_df, "Age")
+```
+
+
+
+```{r}
+model1 <- lmer(CHI_MLU ~ VISIT * Diagnosis  + (1 | SUBJ), new_df)
+model2 <- lmer(CHI_MLU ~ Age * Diagnosis  + (1 | SUBJ), new_df)
+model3 <- lmer(CHI_MLU ~ Age * ADOS2  + (1 | SUBJ), new_df)
+model4 <- lmer(CHI_MLU ~ VISIT * ADOS2  + (1 | SUBJ), new_df)
+model5 <- lmer(CHI_MLU ~ Age * ADOS2  + (1 + MOT_MLU | SUBJ), new_df)
+
+
+model5 <- lmer(CHI_MLU ~ Age * Diagnosis  + (1 + Diagnosis| SUBJ), new_df)
+
+
+anova(model1, model2, model3, model4, model5)
+
+r.squaredGLMM(model5)
+```
+
+
+
 
 ```{r ex4, include = FALSE}
 cor.test(df$VISIT, df$Age)
