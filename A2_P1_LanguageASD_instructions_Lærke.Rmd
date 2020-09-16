@@ -164,10 +164,13 @@ new_df <- merge(df, subset, by = "SUBJ")
 
 
 lm <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + ADOS | SUBJ), df) # Putting ADOS as a random slope (since we found out in portfolio 1, that ASD and TD children have roughly the same baseline lexicon size, but the TD children develop faster. Thus, the severity should have a say in the slope.). This is not possible though: you can only have within-subject factors as random slpoes.
+
 lm1 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 | SUBJ), df)
 lm2 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + MOT_MLU | SUBJ), df)
 lm3 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + Diagnosis | SUBJ), df)
 lm4 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)
+
+
 # lm4 <- lmer(CHI_MLU ~ VISIT*Diagnosis.x + (1 + Diagnosis.x + ADOS2| SUBJ), new_df)
 
 r.squaredGLMM(lm1)
@@ -215,7 +218,10 @@ How would you evaluate whether the model is a good model?
 car::vif(lm4)
 mean(car::vif(lm4))
 
+
+
 r.squaredGLMM(lm4)
+plot(lm4)
 ```
 
 Not too good, right? Let's check whether a growth curve model is better.
@@ -226,12 +232,12 @@ First build the different models, then compare them to see which one is better.
 df$VISIT2 <- (df$VISIT)^2
 df$VISIT3 <- (df$VISIT)^3
 
-quadratic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
+#quadratic_m1.1 <- lm(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis, df)
 #quadratic_m1.2 <- lm(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis, df)
-quadratic_m2.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
+#quadratic_m2.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 | SUBJ), df)
 #quadratic_m2.2 <- lmer(CHI_MLU ~ poly(VISIT,2, raw = T):Diagnosis + (1 | SUBJ), df)
-quadratic_m3.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + MOT_MLU | SUBJ), df)
-quadratic_m3.2 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis | SUBJ), df)
+#quadratic_m3.1 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + MOT_MLU | SUBJ), df)
+#quadratic_m3.2 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis | SUBJ), df)
 quadratic_m3.3 <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)  # So, it turns out, that this model is actually better
 
 
@@ -260,6 +266,7 @@ r.squaredGLMM(cubic_m2.1)
 
 
 ##############
+
 quadratic <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)
 cubic <- lmer(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)
 
