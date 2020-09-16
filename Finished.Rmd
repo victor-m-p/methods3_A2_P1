@@ -1,0 +1,442 @@
+---
+title: "Assignment 2 - Language Development in ASD - Part 1 - Explaining development"
+author: "[YOUR NAME]"
+date: "[DATE]"
+output: html_document
+---
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(include = FALSE)
+```
+
+# Assignment 2
+
+In this assignment you will have to discuss a few important questions (given the data you have). More details below. The assignment submitted to the teachers consists of:
+- a report answering and discussing the questions (so we can assess your conceptual understanding and ability to explain and critically reflect)
+- a link to a git repository with all the code (so we can assess your code)
+
+Part 1 - Basic description of language development
+- Describe your sample (n, age, gender, clinical and cognitive features of the two groups) and critically assess whether the groups (ASD and TD) are balanced
+- Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group). 
+- Describe how parental use of language (in terms of MLU) changes over time. What do you think is going on?
+- Include individual differences in your model of language development (in children). Identify the best model.
+
+Part 2 - Model comparison
+- Discuss the differences in performance of your model in training and testing data
+- Which individual differences should be included in a model that maximizes your ability to explain/predict new data?
+- Predict a new kid's performance (Bernie) and discuss it against expected performance of the two groups
+
+Part 3 - Simulations to plan a new study
+- Report and discuss a power analyses identifying how many new kids you would need to replicate the results
+
+The following involves only Part 1.
+
+## Learning objectives
+
+- Summarize and report data and models
+- Critically apply mixed effects (or multilevel) models
+- Explore the issues involved in feature selection
+
+
+# Quick recap
+Autism Spectrum Disorder is often related to language impairment. However, this phenomenon has not been empirically traced in detail:
+i) relying on actual naturalistic language production,  ii) over extended periods of time.
+
+We therefore videotaped circa 30 kids with ASD and circa 30 comparison kids (matched by linguistic performance at visit 1) for ca. 30 minutes of naturalistic interactions with a parent. We repeated the data collection 6 times per kid, with 4 months between each visit. We transcribed the data and counted: 
+i) the amount of words that each kid uses in each video. Same for the parent.
+ii) the amount of unique words that each kid uses in each video. Same for the parent.
+iii) the amount of morphemes per utterance (Mean Length of Utterance) displayed by each child in each video. Same for the parent. 
+
+This data is in the file you prepared in the previous class. 
+
+NB. A few children have been excluded from your datasets. We will be using them next week to evaluate how good your models are in assessing the linguistic development in new participants.
+
+This RMarkdown file includes 
+1) questions (see above). Questions have to be answered/discussed in a separate document that you have to directly submit on Blackboard.
+2) A break down of the questions into a guided template full of hints for writing the code to solve the exercises. Fill in the code and the paragraphs as required. Then report your results in the doc for the teachers.
+
+REMEMBER that you will have to have a github repository for the code and submit the answers to Blackboard without code (but a link to your github/gitlab repository). This way we can check your code, but you are also forced to figure out how to report your analyses :-)
+
+Before we get going, here is a reminder of the issues you will have to discuss in your report:
+
+1- Describe your sample (n, age, gender, clinical and cognitive features of the two groups) and critically assess whether the groups (ASD and TD) are balanced
+2- Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group). 
+3- Describe how parental use of language (in terms of MLU) changes over time. What do you think is going on?
+4- Include individual differences in your model of language development (in children). Identify the best model.
+
+# Let's go
+
+### Loading the relevant libraries
+
+Load necessary libraries : what will you need?
+- e.g. something to deal with the data
+- e.g. mixed effects models
+- e.g. something to plot with
+
+```{r Load Libraries, include = FALSE}
+pacman::p_load(tidyverse,janitor, lme4, lmerTest, ggplot2, MuMIn)
+
+```
+
+### Define your working directory and load the data
+If you created a project for this class and opened this Rmd file from within that project, your working directory is your project directory.
+
+If you opened this Rmd file outside of a project, you will need some code to find the data:
+- Create a new variable called locpath (localpath)
+- Set it to be equal to your working directory
+- Move to that directory (setwd(locpath))
+- Load the data you saved last time (use read_csv(fileName))
+
+```{r Load Data, include = FALSE}
+df <- read_csv("merged_df_assignment1.csv")
+df$X1 <- NULL
+
+```
+
+
+### Characterize the participants (Exercise 1)
+
+Identify relevant variables: participants demographic characteristics, diagnosis, ADOS, Verbal IQ, Non Verbal IQ, Socialization, Visit, Number of words used, Number of unique words used, mean length of utterance in both child and parents.
+Make sure the variables are in the right format.
+Describe the characteristics of the two groups of participants and whether the two groups are well matched.
+
+```{r descriptive stats, include = FALSE}
+# 1.1
+# the number, age, gender, clinical and cognitive features of children in the groups ASD and TD.
+df <- group_by(df, Diagnosis)
+
+df %>% count(mean(Age, na.rm = TRUE), sort = TRUE)
+df %>% count(Gender, sort = TRUE)
+df %>% count(Ethnicity, sort = TRUE)
+
+
+mean(df$Socialization, na.rm = T)
+
+
+plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(Socialization, na.rm = TRUE))
+# https://stackoverflow.com/questions/23553407/calculating-mean-values-based-on-two-different-groupings-in-a-data-frame
+plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(MullenRaw, na.rm = TRUE))
+plyr::ddply(df, c("Diagnosis"), summarise, mean=mean(ExpressiveLangRaw, na.rm = TRUE))
+
+
+ggplot(df, aes(x = Diagnosis, fill = Ethnicity))+
+  geom_bar() +
+  ggtitle("Plot 1.2 - Ethnic representation in the two diagnostic groups")
+
+ggplot(df, aes(x = Diagnosis, fill = Gender))+
+  geom_bar() +
+  ggtitle("Plot 1.1 - Gender representation in the two diagnostic groups")
+  
+
+# .....
+# demo: ethnicity, gender, age
+# clinical: 
+
+```
+
+
+The sample included mostly young (<20) white males ...
+[REPORT THE RESULTS]
+
+
+## Let's test hypothesis 1: Children with ASD display a language impairment  (Exercise 2)
+
+### Hypothesis: The child's MLU changes: i) over time, ii) according to diagnosis
+
+Let's start with a simple mixed effects linear model
+
+Remember to plot the data first and then to run a statistical test.
+- Which variable(s) should be included as fixed factors?
+- Which variable(s) should be included as random factors?
+
+## Plotting the data
+```{r}
+ggplot(df, aes(VISIT, CHI_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(method = lm) +
+  ggtitle('Development of MLU for children with ASD and TD over time')
+
+```
+
+
+
+## Trying to figure out which random effects we might want
+```{r}
+# Creating some models with the same fixed effects but with varying random effects:
+lm1 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 | SUBJ), df)
+lm2 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + MOT_MLU | SUBJ), df)
+lm3 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + Diagnosis | SUBJ), df)
+lm4 <- lmer(CHI_MLU ~ VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)
+
+# Looking at the r^2
+r.squaredGLMM(lm1)
+r.squaredGLMM(lm2) # This model has the highest R^2.
+r.squaredGLMM(lm3)
+r.squaredGLMM(lm4)
+
+# Making an anova
+anova(lm1, lm2, lm3, lm4)
+
+```
+
+How would you evaluate whether the model is a good model?
+
+```{r ex2 evaluate, include = FALSE}
+# Looking at the r-squared:
+r.squaredGLMM(lm4)
+
+# Looking at the residual plot:
+plot(lm4)
+```
+
+Not too good, right? Let's check whether a growth curve model is better.
+Remember: a growth curve model assesses whether changes in time can be described by linear, or quadratic, or cubic (or... etc.) components.
+First build the different models, then compare them to see which one is better.
+
+```{r ex2 growth curve, include = FALSE}
+# Making new columns in the data frame with the squared and the cubic VISIT values:
+df$VISIT2 <- (df$VISIT)^2
+df$VISIT3 <- (df$VISIT)^3
+
+# Making a quadratic model:
+quadratic <- lmer(CHI_MLU ~ VISIT + VISIT2 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)
+
+# Making a cubic model:
+cubic <- lmer(CHI_MLU ~ VISIT + VISIT3 + Diagnosis + VISIT*Diagnosis + (1 + Diagnosis + MOT_MLU | SUBJ), df)
+
+## Comparing the models:
+
+#writing AIC values down
+m_aic <- AIC(lm4, quadratic, cubic)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_aic)
+
+
+
+#writing down BIC values
+m_bic <- BIC(lm4, quadratic, cubic)
+
+#assigning weights to the models corresponding to their AIC values
+Weights(m_bic)
+
+#putting results into one dataframe:
+mdl_com_df <- tibble( Model = c("lm4", "quadratic", "cubic"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+
+mdl_com_df #Best model: Lowest AIC/BIC or largest AIC_Weight/BIC_Wegiht
+``` 
+
+Exciting right? Let's check whether the model is doing an alright job at fitting the data. Plot the actual CHI_MLU data against the predictions of the model fitted(model). 
+
+
+```{r}
+# Residual plot:
+plot(quadratic)
+
+
+## Plotting the quadratic model fit against actual CHI_MLU data points
+
+# Adding a column with the model predictions to the data frame:
+df$fit <- fitted(quadratic)
+
+# Making the plot:
+ggplot2::ggplot(df, aes(colour = Diagnosis)) + 
+  geom_point(x = df$VISIT, y = df$CHI_MLU) + 
+  geom_point(x = df$VISIT, y = df$fit) + 
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), aes(VISIT, CHI_MLU)) +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), aes(VISIT, fit)) +
+  ggtitle('Plot 2.2: Quadratic model fit plotted against actual CHI_MLU data points')
+
+```
+
+
+
+Now it's time to report our results.
+Remember to report:
+- the estimates for each predictor (beta estimate, standard error, p-value)
+- A plain word description of the results
+- A plot of your model's predictions (and some comments on whether the predictions are sensible)
+
+[REPORT THE RESULTS]
+Linguistic development of children MLU is affected by ... [COMPLETE]
+
+
+```{r}
+summary(quadratic)
+r.squaredGLMM(quadratic)
+```
+
+
+
+## Let's test hypothesis 2: Parents speak equally to children with ASD and TD  (Exercise 3)
+
+### Hypothesis: Parental MLU changes: i) over time, ii) according to diagnosis
+
+```{r ex3, include = FALSE}
+# Trying out some random effects:
+m1 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 | SUBJ), df)
+m2 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + CHI_MLU | SUBJ), df)
+m3 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + Diagnosis | SUBJ), df)
+m4 <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + Diagnosis + CHI_MLU | SUBJ), df)
+
+
+anova(m1, m2, m3, m4)
+
+
+m_aic <- AIC(m1, m2, m3, m4)
+m_bic <- BIC(m1, m2, m3, m4)
+
+mdl_com_df <- tibble( Model = c("m1", "m2", "m3", "m4"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
+
+```
+
+
+```{r ex3, include = FALSE}
+# Making similar quadratic and cubic models:
+pm1_linear <- lmer(MOT_MLU ~ VISIT * Diagnosis + (1 + CHI_MLU | SUBJ), df)
+pm2_quadratic <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT2 + VISIT*Diagnosis + (1 + CHI_MLU | SUBJ), df)
+pm3_cubic <- lmer(MOT_MLU ~ VISIT + Diagnosis + VISIT3 + VISIT*Diagnosis + (1 + CHI_MLU | SUBJ), df)
+
+# Anova says that the quadratic one is the best
+anova(pm1_linear, pm2_quadratic, pm3_cubic)
+
+```
+
+
+
+```{r}
+# Plotting the model
+ggplot(df, aes(VISIT, MOT_MLU, colour = Diagnosis)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2)) +
+  ggtitle('Quadratic model of MLU for children with ASD and TD over time') + 
+  ylab("Fitted child MLU values")
+
+```
+```{r}
+
+summary(pm2_quadratic)
+
+# Parent mlu is affected by time, but probably not by diagnosis. Parent mlu seems to increase at the same rate whether the child is ASD or TD.
+```
+
+
+Parent MLU is affected by ... but probably not ...
+[REPORT THE RESULTS]
+
+### Adding new variables (Exercise 4)
+
+Your task now is to figure out how to best describe the children linguistic trajectory. The dataset contains a bunch of additional demographic, cognitive and clinical variables (e.g.verbal and non-verbal IQ). Try them out and identify the statistical models that best describes your data (that is, the children's MLU). Describe how you selected the best model and send the code to run the model to Victor and Byurakn.
+
+```{r}
+new_df <- read_csv("merged_df_assignment1.csv")
+new_df$X1 <- NULL
+
+# Subsetting the columns that we want to work with:
+subset <- select(new_df, SUBJ, VISIT, ADOS, MullenRaw, ExpressiveLangRaw, Socialization)
+
+# Overwriting the clinical scores from visits 2-6 with the scores from visit 1 for each participant:
+
+# have a dataset with 1 row per name from the 1st visit only and when it merges with the merged_df (after having renamed ADOS to ADOS1 etc of course) the visit 1 values should be copied to the other 5 visits as well in columns ADOS1 etc. and stay original in the original ADOS column. remember to remove column VISIT in subset_2f before merging with merged_df.
+
+# only including visit 1 in the subset
+subset <- filter(subset, VISIT == 1)
+
+# deleting the visit column
+subset <- select(subset, -VISIT)
+
+# rename clinical measures variables
+subset <- dplyr::rename(subset, ADOS2 = ADOS)
+subset <- dplyr::rename(subset, MullenRaw2 = MullenRaw)
+subset <- dplyr::rename(subset, ExpressiveLangRaw2 = ExpressiveLangRaw)
+subset <- dplyr::rename(subset, Socialization2 = Socialization)
+
+
+# merging the subset_2f with merged_df
+new_df <- merge(new_df, subset, by = "SUBJ")
+
+
+
+
+# Removing the rows where the age is NA
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+new_df <- completeFun(new_df, "Age")
+```
+
+
+
+```{r}
+
+model1 <- lmer(CHI_MLU ~ VISIT * Diagnosis  + (1 | SUBJ), new_df)
+model2 <- lmer(CHI_MLU ~ Age * Diagnosis  + (1 | SUBJ), new_df)
+model3 <- lmer(CHI_MLU ~ VISIT * ADOS2  + (1 | SUBJ), new_df)
+model4 <- lmer(CHI_MLU ~ Age * ADOS2  + (1 | SUBJ), new_df)
+
+anova(model1, model2, model3, model4) # Model4 wins
+
+# Building on model4:
+model5 <- lmer(CHI_MLU ~ Age * ADOS2 + MOT_MLU + (1 | SUBJ), new_df)
+model6 <- lmer(CHI_MLU ~ Age * ADOS2 + Gender + (1 | SUBJ), new_df)
+model7 <- lmer(CHI_MLU ~ Age * ADOS2 + MullenRaw + (1 | SUBJ), new_df)
+model8 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + (1 | SUBJ), new_df)
+model9 <- lmer(CHI_MLU ~ Age * ADOS2 + Socialization + (1 | SUBJ), new_df)
+
+# AIC and BIC say that the linear one is the best
+m_aic <- AIC(model4, model5, model6, model7, model8, model9)
+m_bic <- BIC(model4, model5, model6, model7, model8, model9)
+
+mdl_com_df <- tibble( Model = c("model4", "model5", "model6", "model7", "model8", "model9"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
+# Model8 wins
+
+# Building on model8:
+model10 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + Socialization + (1 | SUBJ), new_df)
+model11 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + MOT_MLU + (1 | SUBJ), new_df)
+model12 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + Gender + (1 | SUBJ), new_df)
+model13 <- lmer(CHI_MLU ~ Age * ADOS2 + ExpressiveLangRaw + MullenRaw + (1 | SUBJ), new_df)
+
+# AIC and BIC say that the linear one is the best
+m_aic <- AIC(model8, model10, model11, model12, model13)
+m_bic <- BIC(model8, model10, model11, model12, model13)
+
+mdl_com_df <- tibble( Model = c("model8", "model10", "model11", "model12", "model13"),
+                          AIC=m_aic$AIC, 
+                          AIC_Weight = round(Weights(m_aic), 3), #rounding weights so it looks nicer in the dataframe
+                          BIC=m_bic$BIC,
+                          BIC_Weight = round(Weights(m_bic),3) #rounding weights so it looks nicer in the dataframe
+                          )
+mdl_com_df
+# Model8 still wins
+
+
+
+r.squaredGLMM(model8)
+```
+
+
+
+In addition to ..., the MLU of the children is also correlated with ...
+Using AIC / nested F-tests as a criterium, we compared models of increasing complexity and found that ...
+
+[REPORT THE RESULTS]
