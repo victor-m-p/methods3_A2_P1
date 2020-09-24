@@ -1,6 +1,6 @@
 ---
 title: "Assignment 2 - Language Development in ASD - Part 1 - Explaining development"
-author: "[YOUR NAME]"
+author: "Alba, Lærke Bradder, Manon, Gacilda Anne, Cecilie Vestergaard"
 date: "[DATE]"
 output: html_document
 ---
